@@ -51,7 +51,7 @@ public class JpaAuthorRepository implements AuthorRepository {
     public void delete(Author model) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
-        Author managedAuthor = entityManager.find(Author.class, model.getId());
+        cat.teknos.bookstore.domain.jpa.models.Author managedAuthor = entityManager.find(cat.teknos.bookstore.domain.jpa.models.Author.class, model.getId());
         if (managedAuthor != null) {
             entityManager.remove(managedAuthor);
         }

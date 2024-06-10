@@ -36,38 +36,27 @@ public class BooksManager {
     }
 
     public void start() {
-        out.println("Books: ");
-        out.println("Type:");
-        out.println("1 to insert a new book");
-        out.println("2 to update an existing book");
-        out.println("3 to find a book by title");
-        out.println("4 to show all the books");
-
-        var command = "";
+        String command;
         do {
+            out.println("Books: ");
+            out.println("Type:");
+            out.println("1 to insert a new book");
+            out.println("2 to update an existing book");
+            out.println("3 to find a book by title");
+            out.println("4 to show all the books");
+            out.println("Type 'exit' to return to the main menu");
+
             command = readLine(in);
 
             switch (command) {
-                case "1" -> {
-                    insert();
-                    start();
-                }
-                case "2" -> {
-                    update();
-                    start();
-                }
-                case "3" -> {
-                    getByTitle();
-                    start();
-                }
-                case "4" -> {
-                    getAll();
-                    start();
-                }
+                case "1": insert(); break;
+                case "2": update(); break;
+                case "3": getByTitle(); break;
+                case "4": getAll(); break;
             }
-
         } while (!command.equals("exit"));
     }
+
 
     private void insert() {
         var book = modelFactory.createBook();
@@ -246,7 +235,7 @@ public class BooksManager {
                     return author.getFirstName() + " " + author.getLastName();
                 }),
                 new Column().header("ISBN").with(Book::getIsbn),
-                new Column().header("Price").with(book -> Float.toString(book.getPrice())),
+                new Column().header("Price").with(book -> book.getPrice() != null ? Float.toString(book.getPrice()) : "N/A"),
                 new Column().header("Genre").with(Book::getGenre),
                 new Column().header("Publish Date").with(book -> book.getPublishDate().toString()),
                 new Column().header("Publisher").with(Book::getPublisher),

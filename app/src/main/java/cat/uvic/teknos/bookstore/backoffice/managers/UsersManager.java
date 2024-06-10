@@ -30,43 +30,29 @@ public class UsersManager {
     }
 
     public void start() {
-        out.println("Users Management: ");
-        out.println("Type:");
-        out.println("1 to insert a new user");
-        out.println("2 to update an existing user");
-        out.println("3 to find a user by name");
-        out.println("4 to show all users");
-        out.println("5 to delete a user");
-
-        var command = "";
+        String command;
         do {
+            out.println("Users Management: ");
+            out.println("Type:");
+            out.println("1 to insert a new user");
+            out.println("2 to update an existing user");
+            out.println("3 to find a user by name");
+            out.println("4 to show all users");
+            out.println("5 to delete a user");
+            out.println("Type 'exit' to return to the main menu");
+
             command = readLine(in);
 
             switch (command) {
-                case "1" -> {
-                    insert();
-                    start();
-                }
-                case "2" -> {
-                    update();
-                    start();
-                }
-                case "3" -> {
-                    getByName();
-                    start();
-                }
-                case "4" -> {
-                    getAll();
-                    start();
-                }
-                case "5" -> {
-                    delete();
-                    start();
-                }
+                case "1": insert(); break;
+                case "2": update(); break;
+                case "3": getByName(); break;
+                case "4": getAll(); break;
+                case "5": delete(); break;
             }
-
         } while (!command.equals("exit"));
     }
+
 
     private void insert() {
         var user = modelFactory.createUser();
