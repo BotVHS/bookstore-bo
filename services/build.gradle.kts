@@ -10,12 +10,14 @@ dependencies {
     implementation(project(":domain"))
     implementation(project(":domain-implementations:jpa"))
     implementation(project(":domain-implementations:jdbc"))
+    implementation(project(":domain-implementations:jdbc"))
 
-    implementation("com.github.freva:ascii-table:1.8.0")
-    implementation("org.apache.logging.log4j:log4j-core:2.23.1")
+
+    implementation("com.athaydes.rawhttp:rawhttp-core:2.6.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
 }
 
 application {
     // Define the main class for the application.
-    mainClass = "cat.uvic.teknos.bookstore.backoffice.App"
+    mainClass = "com.albertdiaz.bookstore.services.Server"
 }

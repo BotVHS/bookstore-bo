@@ -11,5 +11,5 @@ plugins {
 }
 
 rootProject.name = "bookstore"
-include("app", "domain", "utilities", ":domain-implementations:file", ":domain-implementations:jdbc", ":domain-implementations:jpa")
-include("database")
+include("app", "domain", "utilities", ":domain-implementations:jdbc", ":domain-implementations:jpa", "services")
+
