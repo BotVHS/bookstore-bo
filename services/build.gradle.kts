@@ -19,5 +19,5 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass = "com.albertdiaz.bookstore.services.Server"
+    mainClass = "com.albertdiaz.bookstore.services.App"
 }

@@ -9,24 +9,31 @@ import rawhttp.core.RawHttpResponse;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import cat.uvic.teknos.bookstore.services.exception.ServerException;
 
 public class Server {
-    public static final int PORT = 80;
+    public final int PORT = 80;
+    private final RequestRouter requestRouter;
+    private boolean SHUTDOWN_SERVER;
 
-    public static void main(String[] args) throws IOException {
+    public Server(RequestRouter requestRouter) {
+        this.requestRouter = requestRouter;
+    }
+
+    public  void start() {
         try (var serverSocket = new ServerSocket(PORT)) {
-            var router = new RequestRouter();
-
-            while (true) {
+            while (!SHUTDOWN_SERVER) {
                 try (var clientSocket = serverSocket.accept()) {
                     var rawHttp = new RawHttp(RawHttpOptions.newBuilder().doNotInsertHostHeaderIfMissing().build());
                     var request = rawHttp.parseRequest(clientSocket.getInputStream());
 
-                    var response = router.execRequest(request);
+                    var response = requestRouter.execRequest(request);
 
                     response.writeTo(clientSocket.getOutputStream());
                 }
             }
+        } catch (IOException e) {
+            throw new ServerException(e);
         }
     }
 }
