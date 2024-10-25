@@ -24,7 +24,6 @@ public class App {
         controllers.put("authors", new AuthorController(repositoryFactory, modelFactory));
 
         var requestRouter = new RequestRouterImpl(controllers);
-        new Server(requestRouter)
-                .start();
+        new Server(requestRouter).start();
     }
 }

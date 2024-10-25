@@ -1,10 +1,7 @@
 package cat.uvic.teknos.bookstore.services;
 
-import cat.uvic.teknos.bookstore.services.exception.ResourceNotFoundException;
-import cat.uvic.teknos.bookstore.services.exception.ServerErrorException;
 import rawhttp.core.RawHttp;
 import rawhttp.core.RawHttpOptions;
-import rawhttp.core.RawHttpResponse;
 
 
 import java.io.IOException;
@@ -12,7 +9,7 @@ import java.net.ServerSocket;
 import cat.uvic.teknos.bookstore.services.exception.ServerException;
 
 public class Server {
-    public final int PORT = 80;
+    public final int PORT = 3000;
     private final RequestRouter requestRouter;
     private boolean SHUTDOWN_SERVER;
 
@@ -33,7 +30,7 @@ public class Server {
                 }
             }
         } catch (IOException e) {
-            throw new ServerException(e);
+            throw new ServerException(e.getMessage());
         }
     }
 }
