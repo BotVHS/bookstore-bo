@@ -1,0 +1,35 @@
+### Get all authors
+GET http://localhost:3000/authors
+Accept: application/json
+
+### Get author by ID
+GET http://localhost:3000/authors/1
+Accept: application/json
+
+### Create new author
+POST http://localhost:3000/authors
+Content-Type: application/json
+
+{
+  "firstName": "Stephen",
+  "lastName": "King",
+  "birthDate": "1947-09-21",
+  "biography": "American author of horror, supernatural fiction, suspense, crime, science-fiction, and fantasy novels",
+  "nationality": "American"
+}
+
+### Update author
+PUT http://localhost:3000/authors/1
+Content-Type: application/json
+
+{
+  "firstName": "Stephen",
+  "lastName": "King",
+  "biography": "Updated biography for Stephen King",
+  "birthDate": "1947-09-21",
+  "nationality": "American"
+}
+
+### Delete author
+DELETE http://localhost:3000/authors/1
+Accept: application/json
