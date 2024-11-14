@@ -1,17 +1,16 @@
-package cat. uvic. teknos. bookstore. services. controllers;
+package cat.uvic.teknos.bookstore.services.controllers;
 
-import cat.uvic.teknos.bookstore.services.controllers.Controller;
+import cat.teknos.bookstore.domain.jpa.models.Author;
+import cat.uvic.teknos.bookstore.services.exception.ResourceNotFoundException;
+import cat.uvic.teknos.bookstore.services.exception.ServerErrorException;
+import cat.uvic.teknos.bookstore.services.utils.Mappers;
 import com.albertdiaz.bookstore.models.ModelFactory;
-import com.albertdiaz.bookstore.repositories.AuthorRepository;
 import com.albertdiaz.bookstore.repositories.RepositoryFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.teknos.bookstore.domain.models.Author;
 
 public class AuthorController implements Controller {
     private final RepositoryFactory repositoryFactory;
     private final ModelFactory modelFactory;
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     public AuthorController(RepositoryFactory repositoryFactory, ModelFactory modelFactory) {
         this.repositoryFactory = repositoryFactory;
@@ -20,32 +19,62 @@ public class AuthorController implements Controller {
 
     @Override
     public String get(int id) {
-        // TODO: retrieve individual author from id, serialize authors in JSON format
-        return "";
+        var author = repositoryFactory.getAuthorRepository().get(id);
+        if (author == null) {
+            throw new ResourceNotFoundException("Author not found with id: " + id);
+        }
+        try {
+            return Mappers.get().writeValueAsString(author);
+        } catch (JsonProcessingException e) {
+            throw new ServerErrorException("Error serializing author", e);
+        }
     }
 
     @Override
     public String get() {
         var authors = repositoryFactory.getAuthorRepository().getAll();
         try {
-            return objectMapper.writeValueAsString(authors);
+            return Mappers.get().writeValueAsString(authors);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new ServerErrorException("Error serializing authors", e);
         }
     }
 
     @Override
     public void post(String json) {
-
+        try {
+            var author = modelFactory.createAuthor();
+            Mappers.get().readerForUpdating(author).readValue(json);
+            repositoryFactory.getAuthorRepository().save(author);
+        } catch (JsonProcessingException e) {
+            throw new ServerErrorException("Error deserializing author: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new ServerErrorException("Error creating author: " + e.getMessage(), e);
+        }
     }
 
     @Override
     public void put(int id, String json) {
+        var author = repositoryFactory.getAuthorRepository().get(id);
+        if (author == null) {
+            throw new ResourceNotFoundException("Author not found with id: " + id);
+        }
 
+        try {
+            Mappers.get().readerForUpdating(author).readValue(json);
+            repositoryFactory.getAuthorRepository().save(author);
+        } catch (JsonProcessingException e) {
+            throw new ServerErrorException("Error updating author", e);
+        }
     }
 
     @Override
     public void delete(int id) {
+        var author = repositoryFactory.getAuthorRepository().get(id);
+        if (author == null) {
+            throw new ResourceNotFoundException("Author not found with id: " + id);
+        }
 
+        repositoryFactory.getAuthorRepository().delete(author);
     }
 }

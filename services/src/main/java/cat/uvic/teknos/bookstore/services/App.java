@@ -1,6 +1,7 @@
 package cat.uvic.teknos.bookstore.services;
 
 import cat.uvic.teknos.bookstore.services.controllers.AuthorController;
+import cat.uvic.teknos.bookstore.services.controllers.BookController;
 import cat.uvic.teknos.bookstore.services.controllers.Controller;
 import com.albertdiaz.bookstore.models.ModelFactory;
 import com.albertdiaz.bookstore.repositories.RepositoryFactory;
@@ -22,6 +23,7 @@ public class App {
 
         // TODO: review how to deserialize json objects
         controllers.put("authors", new AuthorController(repositoryFactory, modelFactory));
+        controllers.put("books", new BookController(repositoryFactory, modelFactory));
 
         var requestRouter = new RequestRouterImpl(controllers);
         new Server(requestRouter).start();

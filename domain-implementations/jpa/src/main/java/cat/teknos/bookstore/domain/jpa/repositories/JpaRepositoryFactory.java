@@ -8,7 +8,7 @@ public class JpaRepositoryFactory implements RepositoryFactory {
     private final EntityManagerFactory entityManagerFactory;
 
     public JpaRepositoryFactory() {
-        entityManagerFactory = Persistence.createEntityManagerFactory("bookstoredb");
+        entityManagerFactory = Persistence.createEntityManagerFactory("bookstore");
     }
 
     @Override

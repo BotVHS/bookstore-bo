@@ -2,14 +2,15 @@ package cat.uvic.teknos.bookstore.services;
 
 import cat.uvic.teknos.bookstore.services.controllers.Controller;
 import cat.uvic.teknos.bookstore.services.exception.ResourceNotFoundException;
+import cat.uvic.teknos.bookstore.services.exception.ServerErrorException;
 import rawhttp.core.RawHttp;
 import rawhttp.core.RawHttpRequest;
 import rawhttp.core.RawHttpResponse;
-
+import java.io.IOException;
 import java.util.Map;
 
 public class RequestRouterImpl implements RequestRouter {
-    private final RawHttp rawHttp = new RawHttp();
+    private static final RawHttp rawHttp = new RawHttp();
     private final Map<String, Controller> controllers;
 
     public RequestRouterImpl(Map<String, Controller> controllers) {
@@ -24,93 +25,120 @@ public class RequestRouterImpl implements RequestRouter {
             var pathParts = path.split("/");
 
             if (pathParts.length < 2) {
-                return createResponse(404, "Not Found");
+                return createErrorResponse(404, "Not Found");
             }
 
             var controllerName = pathParts[1];
 
             if (!controllers.containsKey(controllerName)) {
-                return createResponse(404, "Not Found");
+                return createErrorResponse(404, "Not Found");
             }
 
-            var controller = controllers.get(controllerName);
-            String responseBody;
+            String responseBody = "";
 
-            switch (method) {
-                case "GET":
-                    responseBody = handleGet(pathParts, controller);
+            switch (controllerName) {
+                case "authors":
+                    responseBody = manageResource(request, method, pathParts, "authors");
                     break;
-
-                case "POST":
-                    handlePost(request, controller);
-                    responseBody = "{\"status\":\"created\"}";
+                case "books":
+                    responseBody = manageResource(request, method, pathParts, "books");
                     break;
-
-                case "PUT":
-                    handlePut(pathParts, request, controller);
-                    responseBody = "{\"status\":\"updated\"}";
+                case "orders":
+                    responseBody = manageResource(request, method, pathParts, "orders");
                     break;
-
-                case "DELETE":
-                    handleDelete(pathParts, controller);
-                    responseBody = "{\"status\":\"deleted\"}";
+                case "reviews":
+                    responseBody = manageResource(request, method, pathParts, "reviews");
                     break;
-
                 default:
-                    return createResponse(405, "Method Not Allowed");
+                    return createErrorResponse(404, "Resource not found");
             }
 
-            return createResponse(200, responseBody);
+            return createSuccessResponse(responseBody);
 
         } catch (ResourceNotFoundException e) {
-            return createResponse(404, "Resource Not Found");
+            return createErrorResponse(404, "Resource not found: " + e.getMessage());
+        } catch (ServerErrorException e) {
+            return createErrorResponse(500, "Internal server error: " + e.getMessage());
         } catch (NumberFormatException e) {
-            return createResponse(400, "Invalid ID Format");
+            return createErrorResponse(400, "Invalid ID format");
         } catch (Exception e) {
-            return createResponse(500, "Internal Server Error");
+            return createErrorResponse(500, "Unexpected error: " + e.getMessage());
         }
     }
 
-    private String handleGet(String[] pathParts, Controller controller) {
-        if (pathParts.length == 2) {
-            return controller.get();
-        } else if (pathParts.length == 3) {
-            int id = Integer.parseInt(pathParts[2]);
-            return controller.get(id);
+    private String manageResource(RawHttpRequest request, String method, String[] pathParts, String resourceType) {
+        var controller = controllers.get(resourceType);
+        String responseBody = "";
+
+        switch (method) {
+            case "GET":
+                if (pathParts.length == 3) {
+                    responseBody = controller.get(Integer.parseInt(pathParts[2]));
+                } else if (pathParts.length == 2) {
+                    responseBody = controller.get();
+                } else {
+                    throw new ResourceNotFoundException("Invalid path");
+                }
+                break;
+
+            case "POST":
+                if (pathParts.length != 2) {
+                    throw new ResourceNotFoundException("Invalid path for POST");
+                }
+                String createJson = extractRequestBody(request);
+                controller.post(createJson);
+                responseBody = "{\"status\":\"created\"}";
+                break;
+
+            case "PUT":
+                if (pathParts.length != 3) {
+                    throw new ResourceNotFoundException("Invalid path for PUT");
+                }
+                var updateId = Integer.parseInt(pathParts[2]);
+                String updateJson = extractRequestBody(request);
+                controller.put(updateId, updateJson);
+                responseBody = "{\"status\":\"updated\"}";
+                break;
+
+            case "DELETE":
+                if (pathParts.length != 3) {
+                    throw new ResourceNotFoundException("Invalid path for DELETE");
+                }
+                var deleteId = Integer.parseInt(pathParts[2]);
+                controller.delete(deleteId);
+                responseBody = "{\"status\":\"deleted\"}";
+                break;
+
+            default:
+                throw new ServerErrorException("Method not allowed: " + method);
         }
-        throw new ResourceNotFoundException();
+
+        return responseBody;
     }
 
-    private void handlePost(RawHttpRequest request, Controller controller) {
-        String body = request.getBody()
-                .map(Object::toString)
-                .orElseThrow(() -> new IllegalArgumentException("Request body is required"));
-        controller.post(body);
+    private String extractRequestBody(RawHttpRequest request) {
+        return request.getBody()
+                .map(body -> {
+                    try {
+                        return new String(body.asRawBytes());
+                    } catch (IOException e) {
+                        throw new ServerErrorException("Error reading request body", e);
+                    }
+                })
+                .orElseThrow(() -> new ServerErrorException("Request body is required"));
     }
 
-    private void handlePut(String[] pathParts, RawHttpRequest request, Controller controller) {
-        if (pathParts.length != 3) {
-            throw new ResourceNotFoundException();
-        }
-        int id = Integer.parseInt(pathParts[2]);
-        String body = request.getBody()
-                .map(Object::toString)
-                .orElseThrow(() -> new IllegalArgumentException("Request body is required"));
-        controller.put(id, body);
+    private RawHttpResponse<?> createSuccessResponse(String body) {
+        return rawHttp.parseResponse("""
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+            Content-Length: %d
+
+            %s""".formatted(body.length(), body));
     }
 
-    private void handleDelete(String[] pathParts, Controller controller) {
-        if (pathParts.length != 3) {
-            throw new ResourceNotFoundException();
-        }
-        int id = Integer.parseInt(pathParts[2]);
-        controller.delete(id);
-    }
-
-    private RawHttpResponse<?> createResponse(int statusCode, String body) {
+    private RawHttpResponse<?> createErrorResponse(int statusCode, String message) {
         String statusLine = switch (statusCode) {
-            case 200 -> "200 OK";
-            case 201 -> "201 Created";
             case 400 -> "400 Bad Request";
             case 404 -> "404 Not Found";
             case 405 -> "405 Method Not Allowed";
@@ -118,13 +146,13 @@ public class RequestRouterImpl implements RequestRouter {
             default -> "500 Internal Server Error";
         };
 
-        String response = String.format("""
-                HTTP/1.1 %s
-                Content-Type: application/json
-                Content-Length: %d
+        String jsonMessage = "{\"error\": \"" + message.replace("\"", "\\\"") + "\"}";
 
-                %s""", statusLine, body.length(), body);
+        return rawHttp.parseResponse("""
+            HTTP/1.1 %s
+            Content-Type: application/json
+            Content-Length: %d
 
-        return rawHttp.parseResponse(response);
+            %s""".formatted(statusLine, jsonMessage.length(), jsonMessage));
     }
 }
