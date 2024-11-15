@@ -5,17 +5,17 @@ import com.albertdiaz.bookstore.models.*;
 public class JpaModelFactory implements ModelFactory {
     @Override
     public Author createAuthor() {
-        return new cat.teknos.bookstore.domain.jpa.models.Author();
+        return new Author();
     }
 
     @Override
     public Book createBook() {
-        return new cat.teknos.bookstore.domain.jpa.models.Book();
+        return new Book();
     }
 
     @Override
     public Order createOrder() {
-        return null;
+        return new Order();
     }
 
     @Override
@@ -25,11 +25,11 @@ public class JpaModelFactory implements ModelFactory {
 
     @Override
     public Review createReview() {
-        return null;
+        return new Review();
     }
 
     @Override
     public User createUser() {
-        return new cat.teknos.bookstore.domain.jpa.models.User();
+        return new User();
     }
 }

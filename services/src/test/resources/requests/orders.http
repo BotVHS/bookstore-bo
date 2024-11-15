@@ -1,0 +1,33 @@
+### Get all orders
+GET http://localhost:3000/orders
+Accept: application/json
+
+### Get order by ID
+GET http://localhost:3000/orders/1
+Accept: application/json
+
+### Create new order
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{
+  "user": {
+    "id": 1
+  },
+  "orderDate": "2024-01-15",
+  "totalPrice": 44.98,
+  "shippingAddress": "123 Main St, New York, NY 10001",
+  "orderStatus": "PENDING"
+}
+
+### Update order
+PUT http://localhost:3000/orders/1
+Content-Type: application/json
+
+{
+  "orderStatus": "SHIPPED",
+  "shippingAddress": "Updated shipping address"
+}
+
+### Delete order
+DELETE http://localhost:3000/orders/1

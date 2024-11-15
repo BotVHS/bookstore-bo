@@ -1,0 +1,35 @@
+### Get all reviews
+GET http://localhost:3000/reviews
+Accept: application/json
+
+### Get review by ID
+GET http://localhost:3000/reviews/1
+Accept: application/json
+
+### Create new review
+POST http://localhost:3000/reviews
+Content-Type: application/json
+
+{
+  "book": {
+    "id": 1
+  },
+  "user": {
+    "id": 1
+  },
+  "rating": 5,
+  "comment": "Excellent book, couldn't put it down!",
+  "reviewDate": "2024-01-15"
+}
+
+### Update review
+PUT http://localhost:3000/reviews/1
+Content-Type: application/json
+
+{
+  "rating": 4,
+  "comment": "Updated review: Very good book with some minor issues"
+}
+
+### Delete review
+DELETE http://localhost:3000/reviews/1

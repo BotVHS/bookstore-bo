@@ -1,0 +1,37 @@
+### Get all users
+GET http://localhost:3000/users
+Accept: application/json
+
+### Get user by ID
+GET http://localhost:3000/users/1
+Accept: application/json
+
+### Create new user
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "passwordHash": "hashedpassword123",
+  "address": "123 Main St",
+  "city": "New York",
+  "country": "USA",
+  "postalCode": "10001",
+  "joinDate": "2024-01-01"
+}
+
+### Update user
+PUT http://localhost:3000/users/1
+Content-Type: application/json
+
+{
+  "address": "456 New St",
+  "city": "Los Angeles",
+  "country": "USA",
+  "postalCode": "90001"
+}
+
+### Delete user
+DELETE http://localhost:3000/users/1

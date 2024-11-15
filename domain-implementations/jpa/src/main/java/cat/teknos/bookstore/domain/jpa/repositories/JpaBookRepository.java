@@ -20,18 +20,19 @@ public class JpaBookRepository implements BookRepository {
     public Book getByName(String title) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         try {
-            List<Book> books = entityManager.createQuery("SELECT b FROM Book b WHERE b.title LIKE CONCAT('%', :title, '%')", Book.class)
+            return entityManager.createQuery(
+                            "SELECT b FROM Book b LEFT JOIN FETCH b.author WHERE b.title LIKE CONCAT('%', :title, '%')",
+                            Book.class)
                     .setParameter("title", title)
-                    .getResultList();
-            if (books.isEmpty()) {
-                return null;
-            } else {
-                return books.get(0);
-            }
+                    .getResultList()
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
         } finally {
             entityManager.close();
         }
     }
+
 
     @Override
     public void save(Book model) {
@@ -46,6 +47,7 @@ public class JpaBookRepository implements BookRepository {
             entityManager.getTransaction().commit();
         } catch (Exception e) {
             entityManager.getTransaction().rollback();
+            throw e;
         } finally {
             entityManager.close();
         }
@@ -53,19 +55,50 @@ public class JpaBookRepository implements BookRepository {
 
     @Override
     public void delete(Book model) {
-
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        entityManager.getTransaction().begin();
+        try {
+            Book managedBook = entityManager.find(Book.class, model.getId());
+            if (managedBook != null) {
+                entityManager.remove(managedBook);
+            }
+            entityManager.getTransaction().commit();
+        } catch (Exception e) {
+            entityManager.getTransaction().rollback();
+            throw e;
+        } finally {
+            entityManager.close();
+        }
     }
+
 
     @Override
     public Book get(Integer id) {
-        return null;
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        try {
+            return entityManager.createQuery(
+                            "SELECT b FROM Book b LEFT JOIN FETCH b.author WHERE b.id = :id",
+                            Book.class)
+                    .setParameter("id", id)
+                    .getResultList()
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
+        } finally {
+            entityManager.close();
+        }
     }
 
     @Override
     public Set<Book> getAll() {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
         try {
-            return new HashSet<>(entityManager.createQuery("SELECT b FROM Book b", Book.class).getResultList());
+            return new HashSet<>(
+                    entityManager.createQuery(
+                                    "SELECT DISTINCT b FROM Book b LEFT JOIN FETCH b.author",
+                                    Book.class)
+                            .getResultList()
+            );
         } finally {
             entityManager.close();
         }

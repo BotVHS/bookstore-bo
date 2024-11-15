@@ -23,7 +23,7 @@ public class JpaRepositoryFactory implements RepositoryFactory {
 
     @Override
     public OrderRepository getOrderRepository() {
-        return null;
+        return new JpaOrderRepository(entityManagerFactory);
     }
 
     @Override
@@ -33,7 +33,7 @@ public class JpaRepositoryFactory implements RepositoryFactory {
 
     @Override
     public ReviewRepository getReviewRepository() {
-        return null;
+        return new JpaReviewRepository(entityManagerFactory);
     }
 
     @Override

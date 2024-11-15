@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class BookControllerTest {
     @Test
     void serializationAndDeserializationWithBookAndAuthor() throws JsonProcessingException {
-        // Arrange
         Author author = new Author();
         author.setId(1);
         author.setFirstName("Stephen");
@@ -28,11 +27,9 @@ class BookControllerTest {
         book.setPublisher("Doubleday");
         book.setPageCount(447);
 
-        // Act
         var mapper = Mappers.get();
         var json = mapper.writeValueAsString(book);
 
-        // Assert
         assertNotNull(json);
         var bookDeserialized = mapper.readValue(json, Book.class);
         assertNotNull(bookDeserialized);

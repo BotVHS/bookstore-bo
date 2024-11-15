@@ -49,6 +49,9 @@ public class RequestRouterImpl implements RequestRouter {
                 case "reviews":
                     responseBody = manageResource(request, method, pathParts, "reviews");
                     break;
+                case "users":
+                    responseBody = manageResource(request, method, pathParts, "users");
+                    break;
                 default:
                     return createErrorResponse(404, "Resource not found");
             }
