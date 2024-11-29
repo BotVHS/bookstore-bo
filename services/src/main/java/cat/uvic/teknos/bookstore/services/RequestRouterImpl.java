@@ -3,23 +3,33 @@ package cat.uvic.teknos.bookstore.services;
 import cat.uvic.teknos.bookstore.services.controllers.Controller;
 import cat.uvic.teknos.bookstore.services.exception.ResourceNotFoundException;
 import cat.uvic.teknos.bookstore.services.exception.ServerErrorException;
+import cat.uvic.teknos.bookstore.services.security.ServerSecurityHandler;
 import rawhttp.core.RawHttp;
 import rawhttp.core.RawHttpRequest;
 import rawhttp.core.RawHttpResponse;
+
 import java.io.IOException;
 import java.util.Map;
 
 public class RequestRouterImpl implements RequestRouter {
     private static final RawHttp rawHttp = new RawHttp();
     private final Map<String, Controller> controllers;
+    private final ServerSecurityHandler securityHandler;
 
-    public RequestRouterImpl(Map<String, Controller> controllers) {
+    public RequestRouterImpl(Map<String, Controller> controllers, String keystorePath, String keystorePassword) {
         this.controllers = controllers;
+        this.securityHandler = new ServerSecurityHandler(keystorePath, keystorePassword);
     }
 
     @Override
     public RawHttpResponse<?> execRequest(RawHttpRequest request) {
         try {
+            // Decrypt request if needed
+            String decryptedBody = null;
+            if (request.getBody().isPresent()) {
+                decryptedBody = securityHandler.decryptRequest(request);
+            }
+
             var path = request.getUri().getPath();
             var method = request.getMethod();
             var pathParts = path.split("/");
@@ -38,26 +48,34 @@ public class RequestRouterImpl implements RequestRouter {
 
             switch (controllerName) {
                 case "authors":
-                    responseBody = manageResource(request, method, pathParts, "authors");
+                    responseBody = manageResource(request, method, pathParts, "authors", decryptedBody);
                     break;
                 case "books":
-                    responseBody = manageResource(request, method, pathParts, "books");
+                    responseBody = manageResource(request, method, pathParts, "books", decryptedBody);
                     break;
                 case "orders":
-                    responseBody = manageResource(request, method, pathParts, "orders");
+                    responseBody = manageResource(request, method, pathParts, "orders", decryptedBody);
                     break;
                 case "reviews":
-                    responseBody = manageResource(request, method, pathParts, "reviews");
+                    responseBody = manageResource(request, method, pathParts, "reviews", decryptedBody);
                     break;
                 case "users":
-                    responseBody = manageResource(request, method, pathParts, "users");
+                    responseBody = manageResource(request, method, pathParts, "users", decryptedBody);
                     break;
                 default:
                     return createErrorResponse(404, "Resource not found");
             }
 
+            // Encrypt response if a symmetric key was provided
+            String encryptedKey = request.getHeaders().getFirst("X-Symmetric-Key").orElse(null);
+            if (encryptedKey != null && !responseBody.isEmpty()) {
+                responseBody = securityHandler.encryptResponse(responseBody, encryptedKey);
+            }
+
             return createSuccessResponse(responseBody);
 
+        } catch (SecurityException e) {
+            return createErrorResponse(400, "Security error: " + e.getMessage());
         } catch (ResourceNotFoundException e) {
             return createErrorResponse(404, "Resource not found: " + e.getMessage());
         } catch (ServerErrorException e) {
@@ -69,7 +87,7 @@ public class RequestRouterImpl implements RequestRouter {
         }
     }
 
-    private String manageResource(RawHttpRequest request, String method, String[] pathParts, String resourceType) {
+    private String manageResource(RawHttpRequest request, String method, String[] pathParts, String resourceType, String decryptedBody) {
         var controller = controllers.get(resourceType);
         String responseBody = "";
 
@@ -88,8 +106,10 @@ public class RequestRouterImpl implements RequestRouter {
                 if (pathParts.length != 2) {
                     throw new ResourceNotFoundException("Invalid path for POST");
                 }
-                String createJson = extractRequestBody(request);
-                controller.post(createJson);
+                if (decryptedBody == null) {
+                    throw new ServerErrorException("Request body is required");
+                }
+                controller.post(decryptedBody);
                 responseBody = "{\"status\":\"created\"}";
                 break;
 
@@ -97,9 +117,11 @@ public class RequestRouterImpl implements RequestRouter {
                 if (pathParts.length != 3) {
                     throw new ResourceNotFoundException("Invalid path for PUT");
                 }
+                if (decryptedBody == null) {
+                    throw new ServerErrorException("Request body is required");
+                }
                 var updateId = Integer.parseInt(pathParts[2]);
-                String updateJson = extractRequestBody(request);
-                controller.put(updateId, updateJson);
+                controller.put(updateId, decryptedBody);
                 responseBody = "{\"status\":\"updated\"}";
                 break;
 
@@ -117,18 +139,6 @@ public class RequestRouterImpl implements RequestRouter {
         }
 
         return responseBody;
-    }
-
-    private String extractRequestBody(RawHttpRequest request) {
-        return request.getBody()
-                .map(body -> {
-                    try {
-                        return new String(body.asRawBytes());
-                    } catch (IOException e) {
-                        throw new ServerErrorException("Error reading request body", e);
-                    }
-                })
-                .orElseThrow(() -> new ServerErrorException("Request body is required"));
     }
 
     private RawHttpResponse<?> createSuccessResponse(String body) {

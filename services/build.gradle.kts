@@ -10,7 +10,7 @@ dependencies {
     implementation(project(":domain"))
     implementation(project(":domain-implementations:jpa"))
     implementation(project(":domain-implementations:jdbc"))
-    implementation(project(":domain-implementations:jdbc"))
+    implementation(project(":cryptoutils"))
 
 
     implementation("com.athaydes.rawhttp:rawhttp-core:2.6.0")
