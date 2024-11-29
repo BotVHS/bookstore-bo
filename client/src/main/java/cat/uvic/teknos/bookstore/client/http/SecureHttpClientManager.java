@@ -33,8 +33,28 @@ public class SecureHttpClientManager {
         }
     }
 
+    private void logEncryptedData(HttpRequest request, HttpResponse<String> response) {
+        System.out.println("\n=== Encrypted Request Data ===");
+        System.out.println("Headers:");
+        request.headers().map().forEach((key, values) ->
+                System.out.println(key + ": " + String.join(", ", values)));
+
+        if (request.bodyPublisher().isPresent()) {
+            System.out.println("\nEncrypted Body: " + request.bodyPublisher().get().toString());
+        }
+
+        System.out.println("\n=== Encrypted Response Data ===");
+        System.out.println("Headers:");
+        response.headers().map().forEach((key, values) ->
+                System.out.println(key + ": " + String.join(", ", values)));
+
+        if (response.body() != null && !response.body().isEmpty()) {
+            System.out.println("\nEncrypted Body: " + response.body());
+        }
+        System.out.println("=====================================\n");
+    }
+
     public HttpResponse<String> get(String url) throws IOException, InterruptedException {
-        // Para GET, solo necesitamos una clave simétrica para descifrar la respuesta
         SecretKey symmetricKey = CryptoUtils.createSecretKey();
         String encryptedKey = CryptoUtils.asymmetricEncrypt(
                 CryptoUtils.toBase64(symmetricKey.getEncoded()),
@@ -49,18 +69,17 @@ public class SecureHttpClientManager {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        logEncryptedData(request, response);
         return handleResponse(response, symmetricKey);
     }
 
     public HttpResponse<String> post(String url, String body) throws IOException, InterruptedException {
-        // Crear y encriptar clave simétrica
         SecretKey symmetricKey = CryptoUtils.createSecretKey();
         String encryptedKey = CryptoUtils.asymmetricEncrypt(
                 CryptoUtils.toBase64(symmetricKey.getEncoded()),
                 serverCertificate.getPublicKey()
         );
 
-        // Encriptar cuerpo y calcular hash
         String encryptedBody = CryptoUtils.encrypt(body, symmetricKey);
         String bodyHash = CryptoUtils.getHash(encryptedBody);
 
@@ -73,6 +92,7 @@ public class SecureHttpClientManager {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        logEncryptedData(request, response);
         return handleResponse(response, symmetricKey);
     }
 
@@ -95,6 +115,7 @@ public class SecureHttpClientManager {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        logEncryptedData(request, response);
         return handleResponse(response, symmetricKey);
     }
 
@@ -113,13 +134,13 @@ public class SecureHttpClientManager {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        logEncryptedData(request, response);
         return handleResponse(response, symmetricKey);
     }
 
     private HttpResponse<String> handleResponse(HttpResponse<String> response, SecretKey symmetricKey) {
         try {
             if (response.statusCode() == 200 && response.body() != null && !response.body().isEmpty()) {
-                // Verificar hash si existe
                 String responseHash = response.headers().firstValue("X-Body-Hash").orElse(null);
                 if (responseHash != null) {
                     String calculatedHash = CryptoUtils.getHash(response.body());
@@ -128,7 +149,6 @@ public class SecureHttpClientManager {
                     }
                 }
 
-                // Descifrar cuerpo si existe
                 String decryptedBody = CryptoUtils.decrypt(response.body(), symmetricKey);
                 return new HttpResponse<String>() {
                     @Override
